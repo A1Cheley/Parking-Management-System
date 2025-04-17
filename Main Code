@@ -1,0 +1,124 @@
+#include <iostream>
+#include <deque>  // Using deque to prioritize freed spots
+#include <map>
+#include <iomanip>
+#include <limits>
+
+using namespace std;
+
+class ParkingLot {
+private:
+    deque<string> availableSpots; // Deque allows inserting freed spots at the front
+    map<int, string> parkedCars; // Maps user IDs to their assigned parking spots
+    map<int, string> userNames; // Maps user IDs to their names for reference
+    int userIDCounter; // Assigns unique user IDs
+
+public:
+    // Constructor: Initializes the parking lot with 100 spots from A0 to J9
+    ParkingLot() {
+        userIDCounter = 1; // Start user IDs at 1
+        for (char row = 'A'; row <= 'J'; row++) {
+            for (int num = 0; num <= 9; num++) {
+                availableSpots.push_back(string(1, row) + to_string(num)); // Adding spots to deque
+            }
+        }
+    }
+
+    // Parks a vehicle by assigning the nearest available spot
+    void parkVehicle(string userName) {
+        if (availableSpots.empty()) { // Check if parking is full
+            cout << "Sorry, no parking spots available.\n";
+            return;
+        }
+
+        int assignedID = userIDCounter++; // Generate a unique ID for the user
+        string assignedSpot = availableSpots.front(); // Get the closest available spot
+        availableSpots.pop_front(); // Remove from front (priority spot)
+
+        parkedCars[assignedID] = assignedSpot; // Save parked spot for user
+        userNames[assignedID] = userName; // Save user name associated with ID
+
+        // Notify the user where they have parked and remind them to note their ID
+        cout << "User " << userName << " (ID: "
+             << setw(3) << setfill('0') << assignedID
+             << ") parked at " << assignedSpot << endl;
+        cout << "Remember your ID (" << setw(3) << setfill('0') << assignedID
+             << ") for removing your car later!\n";
+    }
+
+    // Removes a specific vehicle using its assigned ID
+    void removeVehicle(int userID) {
+        if (parkedCars.find(userID) != parkedCars.end()) { // Check if the ID exists
+            string freedSpot = parkedCars[userID]; // Retrieve the freed parking spot
+            parkedCars.erase(userID); // Remove parked car record
+            userNames.erase(userID); // Remove user name associated with ID
+
+            availableSpots.push_front(freedSpot); // Prioritize freed spot for next vehicle
+
+            cout << "User with ID " << setw(3) << setfill('0') << userID
+                 << " has left the parking lot. Spot " << freedSpot << " is now available.\n";
+        } else {
+            cout << "Invalid ID! No vehicle found with ID " << setw(3) << setfill('0') << userID << ".\n";
+        }
+    }
+
+    // Displays the list of currently parked vehicles along with their assigned spots
+    void displayParkedVehicles() {
+        cout << "\nCurrent Parked Vehicles:\n";
+        if (parkedCars.empty()) { // Check if the lot is empty
+            cout << "No vehicles are currently parked.\n";
+            return;
+        }
+
+        for (const auto& entry : parkedCars) { // Loop through parked vehicles
+            cout << "ID: " << setw(3) << setfill('0') << entry.first
+                 << ", User: " << userNames[entry.first]
+                 << ", Parking Spot: " << entry.second << endl;
+        }
+    }
+};
+
+int main() {
+    ParkingLot lot; // Create a parking lot object
+    int choice, userID;
+    string userName;
+
+    do {
+        // Display menu options
+        cout << "\n///////////////////// Parking Management System /////////////////////\n";
+        cout << "1. Park a Vehicle\n2. Remove a Vehicle by ID\n3. Display Parked Vehicles\n4. Exit\n";
+        cout << "Enter choice: ";
+
+        // Validate user input to avoid invalid selections
+        while (!(cin >> choice) || choice < 1 || choice > 4) {
+            cin.clear(); // Clear error flags
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore invalid input
+            cout << "Invalid input! Please enter a number between 1 and 4: ";
+        }
+
+        switch (choice) {
+            case 1:
+                cout << "Enter user name: ";
+                cin >> userName;
+                lot.parkVehicle(userName); // Park vehicle
+                break;
+            case 2:
+                cout << "Enter your parking ID: ";
+                while (!(cin >> userID)) { // Validate numeric ID input
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input! Please enter a valid numeric ID: ";
+                }
+                lot.removeVehicle(userID); // Remove vehicle by ID
+                break;
+            case 3:
+                lot.displayParkedVehicles(); // Show parked vehicles
+                break;
+            case 4:
+                cout << "Exiting program.\n";
+                break;
+        }
+    } while (choice != 4); // Repeat until user chooses to exit
+
+    return 0;
+}
